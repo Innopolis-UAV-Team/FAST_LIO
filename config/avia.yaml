@@ -1,7 +1,8 @@
 common:
     lid_topic:  "/livox/lidar"
     imu_topic:  "/mavros/imu/data"
-    time_sync_en: false         # ONLY turn on when external time synchronization is really not possible
+    time_sync_en: true         # ONLY turn on when external time synchronization is really not possible
+    pub_tf: false
 
 parent_frame: "map"
 child_frame: "base_link"
@@ -20,13 +21,13 @@ mapping:
     det_range:     450.0
     extrinsic_est_en:  true      # true: enable the online estimation of IMU-LiDAR extrinsic
     extrinsic_T: [ 0.0, 0.0, -0.21807 ]
-#    extrinsic_R: [ 0, 0, 1,
-#                   0, 1, 0,
-#                   -1, 0, 0]
-
-    extrinsic_R: [ 0.73, 0, 0.69,
+    extrinsic_R: [ 0, 0, 1,
                    0, 1, 0,
-                   -0.69, 0, 0.73]
+                   -1, 0, 0]
+#
+#    extrinsic_R: [ 0.73, 0, 0.69,
+#                   0, 1, 0,
+#                   -0.69, 0, 0.73]
 #    extrinsic_R: [ 1, 0, 0,
 #                   0, 1, 0,
 #                   0, 0, 1]
@@ -36,7 +37,7 @@ publish:
     path_en:  true
     scan_publish_en:  true       # false: close all the point cloud output
     dense_publish_en: true       # false: low down the points number in a global-frame point clouds scan.
-    scan_bodyframe_pub_en: true  # true: output the point cloud scans in IMU-body-frame
+    scan_bodyframe_pub_en: false  # true: output the point cloud scans in IMU-body-frame
 
 pcd_save:
     pcd_save_en: false
@@ -48,12 +49,12 @@ feature_extract_enable: false
 
 
 # EKF for Navsat
-navsat:
-  publish_tf: true
-  map_frame: map_slam
-  odom_frame: odom
+ekf_gps:
+  publish_tf: false
+  map_frame: map
+  odom_frame: map
   base_link_frame: base_link
-  world_frame: odom
+  world_frame: map
 
   frequency: 50
   two_d_mode: false
@@ -65,17 +66,17 @@ navsat:
   # make sure the input is aligned with ROS REP105. "imu_correct" is manually transformed by myself. EKF can also transform the data using tf between your imu and base_link
   imu0_config: [false, false, false,
                 true,  true,  true,
-                false, false, false,
-                false, false, true,
-                true,  true,  true]
+                true, true, true,
+                true, true, true,
+                false,  false,  false]
   imu0_differential: false
   imu0_queue_size: 50 
   imu0_remove_gravitational_acceleration: true
   # -------------------------------------
   # Odometry (From Navsat):
   # -------------------------------------
-  odom0: /mavros/global_position/local
-  odom0_config: [true,  true,  true,
+  odom0: /mavros/local_position/odom
+  odom0_config: [false,  false,  false,
                  false, false, false,
                  true, true, true,
                  false, false, false,
@@ -83,13 +84,22 @@ navsat:
   odom0_differential: false
   odom0_queue_size: 10
 
+  odom1: /Odometry
+  odom1_config: [true,  true,  true,
+                 false, false, false,
+                 false, false, false,
+                 false, false, false,
+                 false, false, false]
+  odom1_differential: false
+  odom1_queue_size: 10
+
   #                            x     y     z     r     p     y   x_dot  y_dot  z_dot  r_dot p_dot y_dot x_ddot y_ddot z_ddot
-  process_noise_covariance: [  1.0,  0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,    0,    0,      0,
-                               0,    1.0,  0,    0,    0,    0,    0,     0,     0,     0,    0,    0,    0,    0,      0,
-                               0,    0,    10.0, 0,    0,    0,    0,     0,     0,     0,    0,    0,    0,    0,      0,
-                               0,    0,    0,    0.03, 0,    0,    0,     0,     0,     0,    0,    0,    0,    0,      0,
-                               0,    0,    0,    0,    0.03, 0,    0,     0,     0,     0,    0,    0,    0,    0,      0,
-                               0,    0,    0,    0,    0,    0.1,  0,     0,     0,     0,    0,    0,    0,    0,      0,
+  process_noise_covariance: [  0.1,  0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,    0,    0,      0,
+                               0,    0.1,  0,    0,    0,    0,    0,     0,     0,     0,    0,    0,    0,    0,      0,
+                               0,    0,    0.1, 0,    0,    0,    0,     0,     0,     0,    0,    0,    0,    0,      0,
+                               0,    0,    0,    0.01, 0,    0,    0,     0,     0,     0,    0,    0,    0,    0,      0,
+                               0,    0,    0,    0,    0.01, 0,    0,     0,     0,     0,    0,    0,    0,    0,      0,
+                               0,    0,    0,    0,    0,    0.01,  0,     0,     0,     0,    0,    0,    0,    0,      0,
                                0,    0,    0,    0,    0,    0,    0.25,  0,     0,     0,    0,    0,    0,    0,      0,
                                0,    0,    0,    0,    0,    0,    0,     0.25,  0,     0,    0,    0,    0,    0,      0,
                                0,    0,    0,    0,    0,    0,    0,     0,     0.04,  0,    0,    0,    0,    0,      0,
